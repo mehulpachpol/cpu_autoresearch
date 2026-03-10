@@ -4,27 +4,40 @@ import torch.optim as optim
 import time
 from prepare import get_dataloaders, evaluate_accuracy
 
-# Baseline Configuration (The AI should modify this)
-HIDDEN_SIZE = 32
-LEARNING_RATE = 0.01
+# Hypothesis: a small CNN should extract MNIST structure far better than a tiny MLP
+LEARNING_RATE = 0.001
+WEIGHT_DECAY = 1e-4
 
-# Baseline Model: A simple 2-layer MLP
-class SimpleMLP(nn.Module):
+class SimpleCNN(nn.Module):
     def __init__(self):
         super().__init__()
-        # MNIST images are 28x28 = 784 pixels
-        self.fc1 = nn.Linear(784, HIDDEN_SIZE) 
-        self.fc2 = nn.Linear(HIDDEN_SIZE, 10) # 10 classes (digits 0-9)
+        self.features = nn.Sequential(
+            nn.Conv2d(1, 16, kernel_size=3, padding=1),
+            nn.BatchNorm2d(16),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+            nn.Conv2d(16, 32, kernel_size=3, padding=1),
+            nn.BatchNorm2d(32),
+            nn.ReLU(),
+            nn.MaxPool2d(2),
+        )
+        self.classifier = nn.Sequential(
+            nn.Linear(32 * 7 * 7, 64),
+            nn.ReLU(),
+            nn.Linear(64, 10),
+        )
 
     def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = self.fc2(x)
-        return x
+        if x.dim() == 2:
+            x = x.view(x.shape[0], 1, 28, 28)
+        x = self.features(x)
+        x = x.view(x.shape[0], -1)
+        return self.classifier(x)
 
 def train():
     device = torch.device('cpu')
-    model = SimpleMLP().to(device)
-    optimizer = optim.SGD(model.parameters(), lr=LEARNING_RATE)
+    model = SimpleCNN().to(device)
+    optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
     criterion = nn.CrossEntropyLoss()
     
     trainloader, valloader = get_dataloaders()
@@ -43,7 +56,7 @@ def train():
             if time.time() - START_TIME >= TIME_BUDGET_SECONDS:
                 break
                 
-            images = images.view(images.shape[0], -1).to(device)
+            images = images.to(device)
             labels = labels.to(device)
             
             optimizer.zero_grad()
