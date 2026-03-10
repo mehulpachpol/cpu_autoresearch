@@ -7,6 +7,7 @@ from prepare import get_dataloaders, evaluate_accuracy
 # Hypothesis: a small CNN should extract MNIST structure far better than a tiny MLP
 LEARNING_RATE = 0.001
 WEIGHT_DECAY = 1e-4
+SCHEDULER_STEPS = 1000
 
 class SimpleCNN(nn.Module):
     def __init__(self):
@@ -38,6 +39,15 @@ def train():
     device = torch.device('cpu')
     model = SimpleCNN().to(device)
     optimizer = optim.AdamW(model.parameters(), lr=LEARNING_RATE, weight_decay=WEIGHT_DECAY)
+    scheduler = optim.lr_scheduler.OneCycleLR(
+        optimizer,
+        max_lr=0.003,
+        total_steps=SCHEDULER_STEPS,
+        pct_start=0.1,
+        anneal_strategy="cos",
+        div_factor=3.0,
+        final_div_factor=20.0,
+    )
     criterion = nn.CrossEntropyLoss()
     
     trainloader, valloader = get_dataloaders()
@@ -64,6 +74,8 @@ def train():
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
+            if step < SCHEDULER_STEPS:
+                scheduler.step()
             
             step += 1
             
