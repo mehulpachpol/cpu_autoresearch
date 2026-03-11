@@ -25,3 +25,15 @@ You are an expert AI machine learning researcher. Your goal is to maximize the `
 - **Activations:** Try swapping ReLU for GELU or LeakyReLU.
 - **Regularization:** Add Dropout layers or Batch Normalization.
 - **Hyperparameters:** Tune the hidden layer sizes or the learning rate. Watch out for making the model so big that it completes too few steps in 60 seconds.
+
+## The Loop (Git Ratcheting)
+
+1. Propose a single, specific hypothesis to improve the model.
+2. Edit ONLY `train.py`.
+3. Run `python train.py`.
+4. Observe the `Final Validation Accuracy` output.
+5. **IF IT IMPROVES (Score is higher than your previous best):** - Run: `git commit -am "feat: [describe your change] - acc: [new score]"`
+   - This becomes your new baseline.
+6. **IF IT WORSENS OR CRASHES:** - Run: `git reset --hard`
+   - This will instantly wipe away your bad code and restore the last working version.
+7. Repeat indefinitely.
